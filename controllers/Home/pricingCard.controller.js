@@ -1,4 +1,4 @@
-const { getDb, ObjectId } = require("../config/db");
+const { getDB, ObjectId } = require("../../config/db");
 
 const connectDB = async () => {
   const db = await getDb();
@@ -21,7 +21,8 @@ const addPricing = async (req, res) => {
     const pricingCollection = await connectDB();
     const newCard = {
       ...req.body,
-      createdAt: new Date()
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     const result = await pricingCollection.insertOne(newCard);
 
@@ -34,11 +35,11 @@ const addPricing = async (req, res) => {
 
 const updatePricing = async (req, res) => {
   try {
-    const db = getDB();
+    const pricingCollection = await connectDB();
     const { id } = req.params;
     const updatedData = req.body;
 
-    const result = await db.collection('pricing').updateOne(
+    const result = await pricingCollection.updateOne(
       { _id: new ObjectId(id) },
       { $set: { ...updatedData, updatedAt: new Date() } }
     );
@@ -51,4 +52,27 @@ const updatePricing = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Update failed' });
   }
+};
+
+const deletePricing = async (req, res) => {
+  try {
+    const pricingCollection = await connectDB();
+    const { id } = req.params;
+    const result = await pricingCollection.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Pricing card not found' });
+    }
+
+    res.status(200).json({ message: 'Pricing card removed successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Delete failed' });
+  }
+};
+
+module.exports = {
+  getAllPricing,
+  addPricing,
+  updatePricing,
+  deletePricing
 };
