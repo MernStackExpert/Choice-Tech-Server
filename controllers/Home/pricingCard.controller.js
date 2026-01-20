@@ -1,7 +1,7 @@
 const { getDB, ObjectId } = require("../../config/db");
 
 const connectDB = async () => {
-  const db = await getDb();
+  const db = await getDB();
   return db.collection("pricing_card");
 };
 
