@@ -17,6 +17,7 @@ app.use(express.json());
 const pricingRoutes = require('./routes/Home_Routes/pricingRoutes.route');
 const faqRoutes = require('./routes/Home_Routes/faqRoutes.route');
 const purposeRoutes = require('./routes/Home_Routes/purposeRoutes.route');
+const tryFreeRoutes = require('./routes/Home_Routes/tryFreeRoutes.route');
 
 
 connectDB().then(() => {
@@ -31,6 +32,7 @@ connectDB().then(() => {
 app.use('/home/pricing', pricingRoutes);
 app.use('/home/faq', faqRoutes);
 app.use('/home/purpose', purposeRoutes);
+app.use('/home/try-free', tryFreeRoutes);
 
 
 
