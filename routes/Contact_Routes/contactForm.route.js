@@ -4,7 +4,7 @@ const router = express.Router();
 
 router.get('/', getAllContactMessage);
 router.post('/', addContactMessage);
-router.put('/:id', updateContactMessage);
+router.patch('/:id', updateContactMessage);
 router.delete('/:id', deleteContactMessage);
 
 module.exports = router;

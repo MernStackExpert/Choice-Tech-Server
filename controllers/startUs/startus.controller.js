@@ -1,4 +1,5 @@
 const { getDB, ObjectId } = require("../../config/db");
+const sendEmail = require("../../utils/sendEmail");
 
 const getCollection = async () => {
   const db = await getDB();
@@ -50,7 +51,25 @@ const addStartupMessage = async (req, res) => {
       updatedAt: new Date(),
     };
 
+    const email = req.body.email;
+    const name = req.body.name;
+
     const result = await startupCollection.insertOne(message);
+
+if (result.insertedId) {
+      const htmlBody = `
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>Hello ${name},</h2>
+          <p>We received your request (ID: ${result.insertedId}).</p>
+          <p>Our team will contact you within 24 hours.</p>
+          <p>If You Any Question Send Email ( mdnirob30k@gmail.com )</p>
+          <p>Thanks For Your Trust.</p>
+        </div>
+      `;
+
+      await sendEmail(email, "Request Received - Choice Technology", htmlBody);
+    }
+
     res.status(201).send(result);
   } catch (error) {
     res.status(500).send({ message: "Failed to create Message", error });

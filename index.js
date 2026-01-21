@@ -18,15 +18,18 @@ const pricingRoutes = require('./routes/Home_Routes/pricingRoutes.route');
 const tryFreeRoutes = require('./routes/Home_Routes/tryFreeRoutes.route');
 const servicesRoutes = require('./routes/Services_Routes/servicesRoutes.route');
 const homeRoutes = require("./routes/Home_Routes/homesection.route");
-const contactMessageRoute = require("./routes/Contact/contactForm.route")
+const contactMessageRoute = require("./routes/Contact_Routes/contactForm.route");
+const startusMessageRoute = require("./routes/startUs_Routes/startus.route")
 
 
 // home section 
 app.use("/home-section", homeRoutes);
 
 // contact form 
-
 app.use("/contact" , contactMessageRoute)
+
+//start up
+app.use("/startus" , startusMessageRoute)
 
 //api home
 app.use('/home/pricing', pricingRoutes);
