@@ -2,3 +2,8 @@ node_modules
 
 .env
 .vercel
+package-lock.json
+
+choich-tech-firebase-auth-cradential.json
+
+./choich-tech-firebase-auth-cradential.json

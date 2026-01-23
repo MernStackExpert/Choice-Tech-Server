@@ -9,7 +9,11 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors()); 
+app.use(cors({
+  origin: ["http://localhost:5000", "https://yourdomain.com"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 
@@ -20,7 +24,7 @@ const servicesRoutes = require('./routes/Services_Routes/servicesRoutes.route');
 const homeRoutes = require("./routes/Home_Routes/homesection.route");
 const contactMessageRoute = require("./routes/Contact_Routes/contactForm.route");
 const startusMessageRoute = require("./routes/startUs_Routes/startus.route")
-
+const userAuthRoute = require("./routes/User_Route/userRoute.route")
 
 // home section 
 app.use("/home-section", homeRoutes);
@@ -30,6 +34,9 @@ app.use("/contact" , contactMessageRoute)
 
 //start up
 app.use("/startus" , startusMessageRoute)
+
+// user auth 
+app.use("/auth/user" , userAuthRoute)
 
 //api home
 app.use('/home/pricing', pricingRoutes);
@@ -43,13 +50,13 @@ app.get('/', (req, res) => {
 });
 
 
+const PORT = process.env.PORT || 5000;
+
 connectDB().then(() => {
-  if (process.env.NODE_ENV !== 'production') {
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  }
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 });
+
 
 module.exports = app;
