@@ -1,5 +1,5 @@
 const { getDB, ObjectId } = require("../../config/db");
-const sendEmail = require("../../utils/sendEmail")
+const sendEmail = require("../../utils/sendEmail");
 
 const collection = async () => {
   const db = await getDB();
@@ -8,9 +8,9 @@ const collection = async () => {
 
 const getAllUsers = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).send({ message: "Forbidden" });
-    }
+    // if (req.user.role !== "admin") {
+    //   return res.status(403).send({ message: "Forbidden" });
+    // }
 
     const userCollection = await collection();
 
@@ -70,6 +70,7 @@ const createUsers = async (req, res) => {
     };
 
     const result = await userCollection.insertOne(user);
+    const savedUser = await userCollection.findOne({ _id: result.insertedId });
 
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6">
@@ -87,13 +88,9 @@ const createUsers = async (req, res) => {
       </div>
     `;
 
-    await sendEmail(
-      email,
-      "Welcome to Choice Technology",
-      htmlContent
-    );
+    await sendEmail(email, "Welcome to Choice Technology", htmlContent);
 
-    res.status(201).send(result);
+    res.status(201).send(savedUser);
   } catch (error) {
     res.status(500).send({ message: "Failed to create User" });
   }
@@ -115,7 +112,7 @@ const updateProfile = async (req, res) => {
 
     const result = await userCollection.updateOne(
       { firebaseUid },
-      { $set: { ...updateData, updatedAt: new Date() } }
+      { $set: { ...updateData, updatedAt: new Date() } },
     );
 
     if (result.matchedCount === 0) {
@@ -154,25 +151,17 @@ const adminUpdateUser = async (req, res) => {
       return res.status(404).send({ message: "User not found" });
     }
 
-    if (
-      updateData.role &&
-      targetUser.firebaseUid === req.user.firebaseUid
-    ) {
-      return res
-        .status(400)
-        .send({ message: "Admin cannot change own role" });
+    if (updateData.role && targetUser.firebaseUid === req.user.firebaseUid) {
+      return res.status(400).send({ message: "Admin cannot change own role" });
     }
 
-    if (
-      updateData.role &&
-      !["admin", "user"].includes(updateData.role)
-    ) {
+    if (updateData.role && !["admin", "user"].includes(updateData.role)) {
       return res.status(400).send({ message: "Invalid role value" });
     }
 
     await userCollection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { ...updateData, updatedAt: new Date() } }
+      { $set: { ...updateData, updatedAt: new Date() } },
     );
 
     res.send({ message: "User updated successfully" });
