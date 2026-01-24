@@ -8,9 +8,9 @@ const collection = async () => {
 
 const getAllUsers = async (req, res) => {
   try {
-    // if (req.user.role !== "admin") {
-    //   return res.status(403).send({ message: "Forbidden" });
-    // }
+    if (req.user.role !== "admin") {
+      return res.status(403).send({ message: "Forbidden" });
+    }
 
     const userCollection = await collection();
 
@@ -99,9 +99,14 @@ const createUsers = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const userCollection = await collection();
-    const { firebaseUid } = req.user;
+    
+    const firebaseUid = req.user?.firebaseUid || req.body.firebaseUid;
 
-    const allowedFields = ["name", "photoURL"];
+    if (!firebaseUid) {
+      return res.status(400).send({ message: "No identification found" });
+    }
+
+    const allowedFields = ["name", "photoURL", "onForm"];
     const updateData = {};
 
     for (let field of allowedFields) {
@@ -111,12 +116,12 @@ const updateProfile = async (req, res) => {
     }
 
     const result = await userCollection.updateOne(
-      { firebaseUid },
-      { $set: { ...updateData, updatedAt: new Date() } },
+      { firebaseUid: firebaseUid },
+      { $set: { ...updateData, updatedAt: new Date() } }
     );
 
     if (result.matchedCount === 0) {
-      return res.status(404).send({ message: "User not found" });
+      return res.status(404).send({ message: "User not found in choice-tech database" });
     }
 
     res.send({ message: "Profile updated successfully" });
@@ -124,7 +129,6 @@ const updateProfile = async (req, res) => {
     res.status(500).send({ message: "Failed to update profile" });
   }
 };
-
 const adminUpdateUser = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
