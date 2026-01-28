@@ -1,8 +1,9 @@
 const express = require("express");
 const { updateMissionVision, getHomeContent, addFAQ, updateFAQ, deleteFAQ, createMissionVision } = require("../../controllers/Home/homeSection.controller");
+
 const router = express.Router();
 
-router.get("/", getHomeContent);
+router.get("/",  getHomeContent);
 
 router.patch("/mission-vision", updateMissionVision);
 

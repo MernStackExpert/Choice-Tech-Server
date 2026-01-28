@@ -59,8 +59,8 @@ const createOrder = async (req, res) => {
           <p style="margin: 5px 0; color: #fff;"><strong>Order ID:</strong> <span style="color: #22d3ee;">#${randomOrderId}</span></p>
           <p style="margin: 5px 0; color: #fff;"><strong>Service:</strong> ${orderTitle}</p>
           <p style="margin: 5px 0; color: #fff;"><strong>Plan:</strong> ${duration} ${planType}</p>
-          <p style="margin: 5px 0; color: #fff;"><strong>Total Amount:</strong> $${totalAmount}</p>
-          <p style="margin: 5px 0; color: #f87171;"><strong>Due Amount:</strong> $${totalAmount}</p>
+          <p style="margin: 5px 0; color: #fff;"><strong>Total Amount:</strong> ${totalAmount}</p>
+          <p style="margin: 5px 0; color: #f87171;"><strong>Due Amount:</strong> ${totalAmount}</p>
           ${planType === "monthly" ? `<p style="margin: 5px 0; color: #fff;"><strong>Monthly Fee:</strong> <span style="color: #22d3ee;">$${monthlyFee}</span></p>` : ""}
         </div>
 
@@ -96,17 +96,26 @@ const approvePayment = async (req, res) => {
     const order = await orderCollection.findOne({ orderId: orderId });
     if (!order) return res.status(404).send({ success: false, message: "Order not found" });
 
-    const newPaidAmount = order.paidAmount + parseFloat(amountPaid);
+    const paymentAmount = parseFloat(amountPaid);
+    const newPaidAmount = order.paidAmount + paymentAmount;
     const newUnPaidAmount = order.totalAmount - newPaidAmount;
+
+    let extensionUnits = 1;
+    if (order.planType === "monthly" && order.monthlyFee > 0) {
+      extensionUnits = Math.floor(paymentAmount / order.monthlyFee);
+      if (extensionUnits < 1) extensionUnits = 1; 
+    }
 
     let currentExpiry = new Date(order.expiryDate);
     if (currentExpiry < new Date()) currentExpiry = new Date();
 
     if (order.planType === "monthly") {
-      currentExpiry.setMonth(currentExpiry.getMonth() + 1);
+      currentExpiry.setMonth(currentExpiry.getMonth() + extensionUnits);
     } else if (order.planType === "days") {
       currentExpiry.setDate(currentExpiry.getDate() + 7);
     }
+
+    const finalStatus = newUnPaidAmount <= 0 ? "completed" : "active";
 
     await orderCollection.updateOne(
       { orderId: orderId },
@@ -114,14 +123,40 @@ const approvePayment = async (req, res) => {
         $set: {
           paidAmount: newPaidAmount,
           unPaidAmount: newUnPaidAmount < 0 ? 0 : newUnPaidAmount,
+          lastPayment: paymentAmount,
           expiryDate: currentExpiry,
-          status: "active",
+          status: finalStatus,
           updatedAt: new Date()
         }
       }
     );
 
-    res.status(200).send({ success: true, message: "Payment Approved & Node Extended" });
+    const htmlContent = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #fff; max-width: 600px; background: #0a0a0a; padding: 30px; border-radius: 20px; border: 1px solid #22d3ee; margin: auto;">
+        <h2 style="color: #22d3ee; text-align: center;">Payment Verified 💰</h2>
+        <p>Hello,</p>
+        <p>Your payment of <strong>${paymentAmount}</strong> for order <b>#${orderId}</b> has been approved.</p>
+        
+        <div style="background: rgba(34, 211, 238, 0.1); border: 1px solid #22d3ee; padding: 20px; border-radius: 15px; margin: 20px 0;">
+          <p><strong>New Expiry Date:</strong> <span style="color: #22d3ee;">${currentExpiry.toDateString()}</span></p>
+          <p><strong>Months Extended:</strong> ${order.planType === "monthly" ? extensionUnits : "N/A"}</p>
+          <p><strong>Remaining Due:</strong> ${newUnPaidAmount < 0 ? 0 : newUnPaidAmount}</p>
+          <p><strong>Status:</strong> <span style="text-transform: capitalize;">${finalStatus}</span></p>
+        </div>
+
+        <p style="color: #ccc; font-size: 14px;">Your node access has been successfully extended. Thank you for staying with Choice Technology.</p>
+        <p style="color: #666; font-size: 11px; margin-top: 30px; text-align: center;">Choice Technology Team © 2026 | Secure Ecosystem</p>
+      </div>
+    `;
+
+    await sendEmail(order.userEmail, "Payment Confirmation - Choice Technology", htmlContent);
+
+    res.status(200).send({ 
+      success: true, 
+      message: "Payment Approved & Subscription Updated",
+      extendedBy: extensionUnits
+    });
+
   } catch (error) {
     res.status(500).send({ success: false, message: "Approval failed" });
   }

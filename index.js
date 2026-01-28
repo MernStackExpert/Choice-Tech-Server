@@ -28,7 +28,8 @@ const contactMessageRoute = require("./routes/Contact_Routes/contactForm.route")
 const startusMessageRoute = require("./routes/startUs_Routes/startus.route")
 const userAuthRoute = require("./routes/User_Route/userRoute.route")
 const userInfoRoute = require("./routes/User_Route/userinfoRoute.route")
-
+const orderRoutes = require("./routes/ORDER_ROUTE/order.route");
+const paymentHistoryRoute = require("./routes/PAYMENTS/payment.route");
 // home section 
 app.use("/home-section", homeRoutes);
 
@@ -41,6 +42,15 @@ app.use("/startus" , startusMessageRoute)
 // user auth 
 app.use("/auth/user" , userAuthRoute)
 app.use("/info/userinfo" , userInfoRoute)
+
+
+//order api
+app.use("/orders", orderRoutes);
+
+// payment route 
+app.use("/payment" , paymentHistoryRoute)
+
+
 
 //api home
 app.use('/home/pricing', pricingRoutes);
