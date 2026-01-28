@@ -13,8 +13,8 @@ const verifyAdmin = require("../../middleware/verifyAdmin");
 
 const router = express.Router();
 
-router.get("/",  getAllUsers);
-router.post("/create", createUsers);
+router.get("/", verifyToken, verifyAdmin,  getAllUsers);
+router.post("/create", verifyToken, createUsers);
 router.patch("/profile", verifyToken, updateProfile);
 router.patch("/admin/:id", verifyToken, verifyAdmin, adminUpdateUser);
 router.delete("/:id", verifyToken, verifyAdmin, deleteUser);

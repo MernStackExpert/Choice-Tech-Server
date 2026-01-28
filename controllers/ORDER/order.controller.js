@@ -1,0 +1,207 @@
+const { getDB, ObjectId } = require("../../config/db");
+const sendEmail = require("../../utils/sendEmail");
+
+const collection = async () => {
+  const db = await getDB();
+  return db.collection("order_data");
+};
+
+
+const createOrder = async (req, res) => {
+  try {
+    const orderCollection = await collection();
+    const { 
+      userId, 
+      userEmail, 
+      orderTitle, 
+      planType, 
+      duration, 
+      totalAmount 
+    } = req.body;
+
+    const randomOrderId = `CT-${Math.floor(1000 + Math.random() * 90000)}`;
+    const monthlyFee = planType === "monthly" ? (parseFloat(totalAmount) / parseInt(duration)).toFixed(2) : 0;
+
+    let expiryDate = new Date();
+    if (planType === "monthly") {
+      expiryDate.setMonth(expiryDate.getMonth() + parseInt(duration));
+    } else if (planType === "days") {
+      expiryDate.setDate(expiryDate.getDate() + parseInt(duration));
+    }
+
+    const newOrder = {
+      userId,
+      userEmail,
+      orderTitle,
+      orderId: randomOrderId,
+      progress: 0,
+      planType,
+      duration: parseInt(duration),
+      totalAmount: parseFloat(totalAmount),
+      monthlyFee: parseFloat(monthlyFee),
+      paidAmount: 0,
+      unPaidAmount: parseFloat(totalAmount),
+      expiryDate: expiryDate,
+      status: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const result = await orderCollection.insertOne(newOrder);
+
+    const htmlContent = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; border: 1px solid #222; background: #0a0a0a; padding: 30px; border-radius: 20px; margin: auto;">
+        <h2 style="color: #22d3ee; text-align: center; text-transform: uppercase;">New Node Initialized 🚀</h2>
+        <p style="color: #fff;">Hello,</p>
+        <p style="color: #ccc;">A new service node has been successfully configured for you. Here are the order details:</p>
+        
+        <div style="background: rgba(34, 211, 238, 0.1); border: 1px solid #22d3ee; padding: 20px; border-radius: 15px; margin: 20px 0;">
+          <p style="margin: 5px 0; color: #fff;"><strong>Order ID:</strong> <span style="color: #22d3ee;">#${randomOrderId}</span></p>
+          <p style="margin: 5px 0; color: #fff;"><strong>Service:</strong> ${orderTitle}</p>
+          <p style="margin: 5px 0; color: #fff;"><strong>Plan:</strong> ${duration} ${planType}</p>
+          <p style="margin: 5px 0; color: #fff;"><strong>Total Amount:</strong> $${totalAmount}</p>
+          <p style="margin: 5px 0; color: #f87171;"><strong>Due Amount:</strong> $${totalAmount}</p>
+          ${planType === "monthly" ? `<p style="margin: 5px 0; color: #fff;"><strong>Monthly Fee:</strong> <span style="color: #22d3ee;">$${monthlyFee}</span></p>` : ""}
+        </div>
+
+        <div style="background: #111; padding: 20px; border-radius: 15px; border-left: 4px solid #22d3ee;">
+          <p style="margin: 0; color: #22d3ee; font-weight: bold; font-size: 14px;">IMPORTANT DATES:</p>
+          <ul style="color: #ccc; font-size: 13px; padding-left: 20px;">
+            <li>Service Activation Date: ${new Date().toDateString()}</li>
+            <li>Initial Expiry Date: <strong>${expiryDate.toDateString()}</strong></li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${process.env.WEBSITE_URL}/my-cluster" style="background: #22d3ee; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 10px; font-weight: bold; text-transform: uppercase; font-size: 12px;">Go to Dashboard</a>
+        </div>
+        
+        <p style="color: #666; font-size: 11px; margin-top: 30px; text-align: center;">Choice Technology Team © 2026 | Secure Ecosystem</p>
+      </div>
+    `;
+
+    await sendEmail(userEmail, `New Node Initialized - #${randomOrderId}`, htmlContent);
+
+    res.status(201).send({ success: true, message: "Order created successfully", orderId: randomOrderId });
+  } catch (error) {
+    res.status(500).send({ success: false, message: "Order creation failed" });
+  }
+};
+
+const approvePayment = async (req, res) => {
+  try {
+    const orderCollection = await collection();
+    const { orderId, amountPaid } = req.body;
+
+    const order = await orderCollection.findOne({ orderId: orderId });
+    if (!order) return res.status(404).send({ success: false, message: "Order not found" });
+
+    const newPaidAmount = order.paidAmount + parseFloat(amountPaid);
+    const newUnPaidAmount = order.totalAmount - newPaidAmount;
+
+    let currentExpiry = new Date(order.expiryDate);
+    if (currentExpiry < new Date()) currentExpiry = new Date();
+
+    if (order.planType === "monthly") {
+      currentExpiry.setMonth(currentExpiry.getMonth() + 1);
+    } else if (order.planType === "days") {
+      currentExpiry.setDate(currentExpiry.getDate() + 7);
+    }
+
+    await orderCollection.updateOne(
+      { orderId: orderId },
+      {
+        $set: {
+          paidAmount: newPaidAmount,
+          unPaidAmount: newUnPaidAmount < 0 ? 0 : newUnPaidAmount,
+          expiryDate: currentExpiry,
+          status: "active",
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    res.status(200).send({ success: true, message: "Payment Approved & Node Extended" });
+  } catch (error) {
+    res.status(500).send({ success: false, message: "Approval failed" });
+  }
+};
+
+const updateOrderProgress = async (req, res) => {
+  try {
+    const orderCollection = await collection();
+    const { orderId, progressValue } = req.body;
+
+    const result = await orderCollection.updateOne(
+      { orderId: orderId },
+      { $set: { progress: parseInt(progressValue), updatedAt: new Date() } }
+    );
+
+    if (result.modifiedCount > 0) {
+      res.status(200).send({ success: true, message: `Progress updated to ${progressValue}%` });
+    } else {
+      res.status(404).send({ success: false, message: "Order not found" });
+    }
+  } catch (error) {
+    res.status(500).send({ success: false, message: "Progress update failed" });
+  }
+};
+
+
+const getAllOrders = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).send({ message: "Forbidden Access" });
+    }
+
+    const orderCollection = await collection();
+    let query = {};
+
+    if (req.query.email) {
+      query.userEmail = req.query.email;
+    }
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const totalOrders = await orderCollection.countDocuments(query);
+
+    const result = await orderCollection
+      .find(query)
+      .sort({ createdAt: 1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    res.send({
+      success: true,
+      result,
+      totalOrders,
+      totalPages: Math.ceil(totalOrders / limit),
+      currentPage: page
+    });
+  } catch (error) {
+    res.status(500).send({ success: false, message: "Failed To Fetch Orders Data" });
+  }
+};
+
+
+const getUserOrders = async (req, res) => {
+  try {
+    const orderCollection = await collection();
+    const { userId } = req.params;
+    const orders = await orderCollection.find({ userId: userId }).sort({ createdAt: -1 }).toArray();
+    res.status(200).send({ success: true, data: orders });
+  } catch (error) {
+    res.status(500).send({ success: false, message: "Failed to fetch orders" });
+  }
+};
+
+module.exports = {
+  createOrder,
+  approvePayment,
+  updateOrderProgress,
+  getUserOrders,
+  getAllOrders,
+};

@@ -12,7 +12,7 @@ const verifyAdmin = require("../../middleware/verifyAdmin");
 
 router.post("/", verifyToken, createUserInfo);
 
-router.get("/", getAllUserInfo);
+router.get("/", verifyToken, verifyAdmin, getAllUserInfo);
 
 router.get("/:email", verifyToken, getUserInfoByEmail);
 

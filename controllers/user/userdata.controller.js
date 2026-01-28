@@ -45,16 +45,26 @@ const getAllUsers = async (req, res) => {
 const createUsers = async (req, res) => {
   try {
     const userCollection = await collection();
-
-    const { firebaseUid, email, displayName, photoURL } = req.body;
+    const { firebaseUid, email, displayName, photoURL, password } = req.body;
 
     if (!firebaseUid || !email) {
       return res.status(400).send({ message: "Invalid user data" });
     }
 
     const exist = await userCollection.findOne({ firebaseUid });
+
     if (exist) {
-      return res.status(200).send(exist);
+      const updateDoc = {
+        $set: {
+          name: displayName || exist.name,
+          photoURL: photoURL || exist.photoURL,
+          updatedAt: new Date(),
+        },
+      };
+
+      await userCollection.updateOne({ firebaseUid }, updateDoc);
+      const updatedUser = await userCollection.findOne({ firebaseUid });
+      return res.status(200).send(updatedUser);
     }
 
     const user = {
@@ -73,22 +83,33 @@ const createUsers = async (req, res) => {
     const savedUser = await userCollection.findOne({ _id: result.insertedId });
 
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6">
-        <h2>Welcome to Choice Technology 🎉</h2>
-        <p>Hello ${displayName || "User"},</p>
-        <p>Your account has been successfully created.</p>
-        <p>Our admin will send you a separate email with your login credentials.</p>
-        <p>You can visit Your Dashboard using the link below:</p>
-        <a href="${process.env.WEBSITE_URL}" target="_blank">
-          ${process.env.WEBSITE_URL}
-        </a>
-        <br /><br />
-        <p>Thank you for choosing us.</p>
-        <p><strong>Choice Technology Team</strong></p>
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; border: 1px solid #222; background: #0a0a0a; padding: 30px; border-radius: 20px;">
+        <h2 style="color: #22d3ee; text-align: center; text-transform: uppercase;">Welcome to Choice Technology 🎉</h2>
+        <p style="color: #fff;">Hello <strong>${displayName || "User"}</strong>,</p>
+        <p style="color: #ccc;">Your account has been successfully created in our neural network. Here are your credentials for future reference:</p>
+        
+        <div style="background: rgba(34, 211, 238, 0.1); border: 1px solid #22d3ee; padding: 20px; border-radius: 15px; margin: 20px 0;">
+          <p style="margin: 5px 0; color: #fff;"><strong>Email:</strong> ${email}</p>
+          <p style="margin: 5px 0; color: #fff;"><strong>Password:</strong> <span style="color: #22d3ee;">${password}</span></p>
+        </div>
+
+        <div style="background: #111; padding: 20px; border-radius: 15px; border-left: 4px solid #22d3ee;">
+          <p style="margin: 0; color: #22d3ee; font-weight: bold; font-size: 14px;">NEXT STEPS:</p>
+          <ul style="color: #ccc; font-size: 13px; padding-left: 20px;">
+            <li>Login to your dashboard and submit the <strong>Onboarding Form</strong>.</li>
+            <li>Go to <strong>Profile Settings</strong> to verify your email address.</li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${process.env.WEBSITE_URL}" style="background: #22d3ee; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 10px; font-weight: bold; text-transform: uppercase; font-size: 12px;">Access Your Node</a>
+        </div>
+        
+        <p style="color: #666; font-size: 11px; margin-top: 30px; text-align: center;">Choice Technology Team © 2026 | Secure Ecosystem</p>
       </div>
     `;
 
-    await sendEmail(email, "Welcome to Choice Technology", htmlContent);
+    await sendEmail(email, "Your Choice Technology Credentials", htmlContent);
 
     res.status(201).send(savedUser);
   } catch (error) {
@@ -99,7 +120,7 @@ const createUsers = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const userCollection = await collection();
-    
+
     const firebaseUid = req.user?.firebaseUid || req.body.firebaseUid;
 
     if (!firebaseUid) {
@@ -117,11 +138,13 @@ const updateProfile = async (req, res) => {
 
     const result = await userCollection.updateOne(
       { firebaseUid: firebaseUid },
-      { $set: { ...updateData, updatedAt: new Date() } }
+      { $set: { ...updateData, updatedAt: new Date() } },
     );
 
     if (result.matchedCount === 0) {
-      return res.status(404).send({ message: "User not found in choice-tech database" });
+      return res
+        .status(404)
+        .send({ message: "User not found in choice-tech database" });
     }
 
     res.send({ message: "Profile updated successfully" });
