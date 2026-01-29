@@ -6,7 +6,9 @@ const {
     approvePayment, 
     updateOrderProgress, 
     getUserOrders, 
-    getAllOrders 
+    getAllOrders, 
+    getOrderDetails,
+    cancelOrder
 } = require("../../controllers/ORDER/order.controller");
 
 const verifyToken = require("../../middleware/verifyToken");
@@ -21,5 +23,9 @@ router.patch("/update-progress", verifyToken, verifyAdmin, updateOrderProgress);
 router.get("/all", verifyToken, verifyAdmin, getAllOrders);
 
 router.get("/user/:userId", verifyToken, getUserOrders);
+
+router.get("/details/:orderId", verifyToken, getOrderDetails);
+
+router.patch("/cancel/:orderId", verifyToken, cancelOrder);
 
 module.exports = router;

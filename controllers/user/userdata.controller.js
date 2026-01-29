@@ -152,6 +152,7 @@ const updateProfile = async (req, res) => {
     res.status(500).send({ message: "Failed to update profile" });
   }
 };
+
 const adminUpdateUser = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -220,9 +221,34 @@ const deleteUser = async (req, res) => {
   }
 };
 
+
+const getSingleUser = async (req, res) => {
+  try {
+    const userCollection = await collection();
+    const { uid } = req.params; 
+
+    if (!uid) {
+      return res.status(400).send({ success: false, message: "Firebase UID is required" });
+    }
+
+    const user = await userCollection.findOne({ firebaseUid: uid });
+
+    if (!user) {
+      return res.status(404).send({ success: false, message: "User not found in database" });
+    }
+
+    res.status(200).send({ success: true, data: user });
+  } catch (error) {
+    console.error("Error fetching single user:", error);
+    res.status(500).send({ success: false, message: "Internal Server Error" });
+  }
+};
+
+
 module.exports = {
   getAllUsers,
   createUsers,
+  getSingleUser,
   updateProfile,
   adminUpdateUser,
   deleteUser,

@@ -23,6 +23,7 @@ const submitPayment = async (req, res) => {
       method, 
       transactionId, 
       senderNumber, 
+      paymentNumer,
       amountPaid,
       paymentScreenshot 
     } = req.body;
@@ -38,6 +39,7 @@ const submitPayment = async (req, res) => {
       method,
       transactionId,
       senderNumber,
+      paymentNumer,
       amountPaid: parseFloat(amountPaid),
       paymentScreenshot: paymentScreenshot || null,
       status: "pending",
