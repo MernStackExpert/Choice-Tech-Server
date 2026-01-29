@@ -30,6 +30,7 @@ const userAuthRoute = require("./routes/User_Route/userRoute.route")
 const userInfoRoute = require("./routes/User_Route/userinfoRoute.route")
 const orderRoutes = require("./routes/ORDER_ROUTE/order.route");
 const paymentHistoryRoute = require("./routes/PAYMENTS/payment.route");
+const adminRoutes = require("./routes/ADMIN_ROUTE/admin.route");
 // home section 
 app.use("/home-section", homeRoutes);
 
@@ -50,6 +51,8 @@ app.use("/orders", orderRoutes);
 // payment route 
 app.use("/payment" , paymentHistoryRoute)
 
+//admin route
+app.use("/admin", adminRoutes);
 
 
 //api home
