@@ -23,7 +23,7 @@ const submitPayment = async (req, res) => {
       method, 
       transactionId, 
       senderNumber, 
-      paymentNumer,
+      paymentNumber,
       amountPaid,
       paymentScreenshot 
     } = req.body;
@@ -39,7 +39,7 @@ const submitPayment = async (req, res) => {
       method,
       transactionId,
       senderNumber,
-      paymentNumer,
+      paymentNumber,
       amountPaid: parseFloat(amountPaid),
       paymentScreenshot: paymentScreenshot || null,
       status: "pending",
@@ -130,9 +130,35 @@ const getAllPaymentRequests = async (req, res) => {
 };
 
 
+const getPaymentDetails = async (req, res) => {
+  try {
+    const payments = await paymentCollection();
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ success: false, message: "Invalid Payment ID" });
+    }
+
+    const payment = await payments.findOne({ _id: new ObjectId(id) });
+
+    if (!payment) {
+      return res.status(404).send({ success: false, message: "Payment record not found" });
+    }
+
+    if (req.user.role !== "admin" && req.user.email !== payment.userEmail) {
+      return res.status(403).send({ success: false, message: "Unauthorized access to payment data" });
+    }
+
+    res.status(200).send({ success: true, data: payment });
+  } catch (error) {
+    res.status(500).send({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   submitPayment,
   getAllPaymentRequests,
   getMyPaymentHistory,
-  updatePaymentStatus
+  updatePaymentStatus,
+  getPaymentDetails,
 };

@@ -4,9 +4,9 @@ const verifyToken = require("../../middleware/verifyToken");
 const { 
   createUserInfo, 
   getAllUserInfo, 
-  getUserInfoByEmail, 
   updateUserInfoById, 
-  deleteUserInfoById 
+  deleteUserInfoById, 
+  getUserInfoByUid
 } = require("../../controllers/user/userinfo.controller");
 const verifyAdmin = require("../../middleware/verifyAdmin");
 
@@ -14,7 +14,7 @@ router.post("/", verifyToken, createUserInfo);
 
 router.get("/", verifyToken, verifyAdmin, getAllUserInfo);
 
-router.get("/:email", verifyToken, getUserInfoByEmail);
+router.get("/:uid",  getUserInfoByUid);
 
 router.patch("/:id", verifyToken, updateUserInfoById);
 

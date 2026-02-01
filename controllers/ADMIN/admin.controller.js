@@ -6,18 +6,23 @@ const getAdminStats = async (req, res) => {
     const orderCollection = db.collection("order_data");
     const userCollection = db.collection("user_data");
     const paymentCollection = db.collection("payment_history");
+
     const orderStats = await orderCollection.aggregate([
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: "$paidAmount" },
-          totalDue: { $sum: "$unPaidAmount" },
           totalOrders: { $sum: 1 },
           activeNodes: {
             $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] }
           },
           pendingOrders: {
             $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] }
+          },
+          totalRevenue: {
+            $sum: { $cond: [{ $eq: ["$status", "active"] }, "$paidAmount", 0] }
+          },
+          totalDue: {
+            $sum: { $cond: [{ $eq: ["$status", "active"] }, "$unPaidAmount", 0] }
           }
         }
       }
