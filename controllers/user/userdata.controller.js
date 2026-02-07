@@ -97,7 +97,8 @@ const createUsers = async (req, res) => {
           <p style="margin: 0; color: #22d3ee; font-weight: bold; font-size: 14px;">NEXT STEPS:</p>
           <ul style="color: #ccc; font-size: 13px; padding-left: 20px;">
             <li>Login to your dashboard and submit the <strong>Onboarding Form</strong>.</li>
-            <li>Go to <strong>Profile Settings</strong> to verify your email address.</li>
+            <li>GO To <strong> Settings</strong> and Change Your <strong>Password</strong>.</li>
+            <li>Go to <strong> Settings</strong> to verify your email address.</li>
           </ul>
         </div>
 
